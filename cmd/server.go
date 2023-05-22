@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 type Server struct {
@@ -13,17 +14,23 @@ type Server struct {
 	Port     int    `json:"port"`
 }
 
-const (
-	defaultSSHConfigFile = ".sshManager.json"
+var (
+	cfgFile              string
+	servers              = make([]Server, 0)
+	defaultSSHConfigFile string
 	defaultPort          = 22
 )
 
-var (
-	cfgFile string
-	servers = make([]Server, 0)
-)
-
 func initConfig() {
+	// Get the home directory
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	// Set the default SSH config file to a file in the home directory
+	defaultSSHConfigFile = filepath.Join(home, ".zssh.json")
+
 	// Load the servers from the config file
 	loadServers()
 }
@@ -80,10 +87,11 @@ func findServerByID(id string) *Server {
 }
 
 func removeServerByID(id string) {
-	for i, s := range servers {
-		if s.ID == id {
+	for i := 0; i < len(servers); {
+		if servers[i].ID == id {
 			servers = append(servers[:i], servers[i+1:]...)
-			return
+			continue
 		}
+		i++
 	}
 }

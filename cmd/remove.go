@@ -6,13 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func removeServer(s *Server) {
-	for i, server := range servers {
-		if &server == s {
-			servers = append(servers[:i], servers[i+1:]...)
-			return
-		}
-	}
+func removeServer(id string) {
+	// Remove the selected server
+	removeServerByID(id)
+
+	// Save the updated server list to the config file
+	saveServers()
 }
 
 var removeCmd = &cobra.Command{
@@ -94,11 +93,7 @@ var removeCmd = &cobra.Command{
 					}
 
 					// Remove the selected server
-					removeServer(selectedServer)
-					servers = append(servers[:selectedIndex], servers[selectedIndex+1:]...)
-
-					// Save the updated list of servers
-					saveServers()
+					removeServer(selectedServer.ID)
 				}
 			}
 		}

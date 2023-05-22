@@ -102,7 +102,7 @@ var listCmd = &cobra.Command{
 
 					case "Remove":
 						// Remove the selected server
-						removeServer(selectedServer)
+						removeServer(selectedServer.ID)
 						// Remove the server from the list
 						servers = append(servers[:selectedIndex], servers[selectedIndex+1:]...)
 					}
@@ -158,9 +158,10 @@ var listCmd = &cobra.Command{
 						connectToServer(selectedServer)
 
 					case "Remove":
-						// Connect to the selected server
-						removeServer(selectedServer)
-						servers = append(servers[:selectedIndex], servers[selectedIndex+1:]...)
+						// Remove the selected server
+						removeServerByID(selectedServer.ID)
+						saveServers()
+
 					}
 				}
 			}
