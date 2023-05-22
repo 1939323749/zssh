@@ -161,6 +161,10 @@ var listCmd = &cobra.Command{
 						// Remove the selected server
 						removeServerByID(selectedServer.ID)
 						saveServers()
+						// Check if the current page is empty, and if so, go to the previous page
+						if startIndex >= len(servers) && page > 0 {
+							page--
+						}
 
 					}
 				}
