@@ -105,8 +105,3 @@ var removeCmd = &cobra.Command{
 		}
 	},
 }
-
-// Register the command
-func init() {
-	rootCmd.AddCommand(removeCmd)
-}

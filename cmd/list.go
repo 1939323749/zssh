@@ -158,6 +158,16 @@ var listCmd = &cobra.Command{
 						connectToServer(selectedServer)
 
 					case "Remove":
+						// Confirm the removal
+						confirmPrompt := promptui.Prompt{
+							Label:     fmt.Sprintf("Are you sure you want to remove server %s", selectedServer.ID),
+							IsConfirm: true,
+						}
+						_, err = confirmPrompt.Run()
+						if err != nil {
+							// If the user does not confirm, continue with the loop
+							continue
+						}
 						// Remove the selected server
 						removeServerByID(selectedServer.ID)
 						saveServers()
@@ -171,9 +181,4 @@ var listCmd = &cobra.Command{
 			}
 		}
 	},
-}
-
-// Register the command
-func init() {
-	rootCmd.AddCommand(listCmd)
 }
