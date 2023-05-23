@@ -5,6 +5,8 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
+	"io"
 	"os"
 )
 
@@ -17,7 +19,7 @@ func connectToServer(server *Server) {
 	}
 	password, err := prompt.Run()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Printf("Prompt failed %v\n", err)
 		return
 	}
 
@@ -36,6 +38,7 @@ func connectToServer(server *Server) {
 		return
 	}
 
+	// Start a new session
 	session, err := client.NewSession()
 	if err != nil {
 		fmt.Println("Failed to create session: ", err)
@@ -44,32 +47,49 @@ func connectToServer(server *Server) {
 
 	defer session.Close()
 
+	// Get terminal size
+	fd := int(os.Stdin.Fd())
+	width, height, err := terminal.GetSize(fd)
+	if err != nil {
+		fmt.Println("Failed to get terminal size: ", err)
+		return
+	}
+
+	// Request a pseudo terminal on the server with terminal size
+	err = session.RequestPty("xterm-256color", height, width, ssh.TerminalModes{})
+	if err != nil {
+		fmt.Println("Request for pseudo terminal failed: ", err)
+		return
+	}
+
+	// Connect the session to Stdin, Stdout, and Stderr
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
-	defer session.Close()
-
-	// Set up terminal modes
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          1,     // enable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	}
-
-	// Request pseudo terminal
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		fmt.Println("request for pseudo terminal failed: ", err)
+	// Set terminal in raw mode
+	oldState, err := terminal.MakeRaw(fd)
+	if err != nil {
+		fmt.Println("Failed to set terminal in raw mode: ", err)
 		return
 	}
 
-	// Start remote shell
-	if err := session.Shell(); err != nil {
-		fmt.Println("failed to start shell: ", err)
+	// Restore terminal state at the end
+	defer terminal.Restore(fd, oldState)
+
+	// Start the shell on the remote server with terminal raw mode
+	err = session.Shell()
+	if err != nil {
+		fmt.Println("Failed to start shell: ", err)
 		return
 	}
 
-	session.Wait()
+	// Wait for the session to finish
+	err = session.Wait()
+	if err != nil && err != io.EOF {
+		fmt.Println("Failed to wait for session: ", err)
+		return
+	}
 }
 
 var connectCmd = &cobra.Command{
